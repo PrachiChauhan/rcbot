@@ -1,0 +1,115 @@
+* {
+  font-family: Verdana, Arial, sans-serif;
+}
+body {
+  background-color: black;
+}
+
+header {
+  text-align: center;
+  font-size: 20px;
+  color: white;
+}
+
+/*****************
+ * . div1 div1 . *
+ * . div2 div3 . *
+ * . div4 div5 . *
+ * . div6 div6 . *
+ * . div7  .   . *
+ *****************/
+.grid-container {
+  display              : grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  grid-template-rows   : 1.3fr 1fr 0.1fr .1fr .1fr;
+  grid-template-areas  : ". div1 div1 ." ". div2 div3 ." ". div4 div5 ." ". div6 div6 ." ". div7 . .";
+  grid-column-gap      : 4px;
+  grid-row-gap         : 4px;
+}
+
+.div1 {
+   grid-area : div1;
+   text-align: center;
+   /* outline: 1px dashed red; */
+}
+.div2 {
+   grid-area : div2;
+   text-align: center;
+   /* outline: 1px dashed red; */
+}
+.div3 {
+   grid-area : div3;
+   text-align: center;
+   /* outline: 1px dashed red; */
+}
+.div4 {
+   grid-area : div4;
+   text-align: center;
+   /* outline: 1px dashed red; */
+}
+.div5 {
+   grid-area : div5;
+   text-align: center;
+   /* outline: 1px dashed red; */
+}
+.div6 {
+   grid-area : div6;
+   border    : 1px solid red;
+   /* height    : 100px; */
+   /* padding   : 1px; */
+   text-align: center;
+   /* outline: 1px dashed red; */
+}
+.div7 {
+   grid-area : div7;
+   /* border    : 2px solid green; */
+   height    : 50px;
+   padding   : 1px;
+   text-align: left;
+   /* outline: 1px dashed red; */
+}
+
+img {
+   max-width : 100%;
+   max-height: 100%;
+}
+
+.range_in {
+   text-align:center;
+   width     :280px;
+}
+
+.buttons1 {
+   background-color: #4CAF50;
+   border: none;
+   color: white;
+   padding: 15px 32px;
+   text-align: center;
+   text-decoration: none;
+   display: inline-block;
+   font-size: 16px;
+   margin: 4px 2px;
+   cursor: pointer;
+   height:40px;
+   width:50px;
+ }
+
+ .right {
+   float: right;
+   height: 40px;
+   width: 40px;
+ }
+ #start_button {
+   border: 0;
+   background-color:transparent;
+   padding: 0;
+ }
+ #results {
+   font-size: 10px;
+   font-weight: bold;
+   color: rgb(250, 123, 123);
+   border: 1px solid #ddd;
+   padding: 5px;
+   text-align: left;
+   min-height: 40px;
+ }

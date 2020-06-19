@@ -1,0 +1,10 @@
+right
+left
+go
+forward
+backward
+stop
+hault
+start
+video
+zero

@@ -1,0 +1,77 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>RCBOT</title>
+    <link rel="stylesheet" href="css/style1.css">
+</head>
+
+<body>
+
+    <header>
+        <h2 style="color:white;">RCBOT</h2>
+    </header>
+    <div class="grid-container">
+        <div class="div1">
+            <!-- <img id="video_load" src="http://192.168.1.43:8080/?action=stream" style="visibility:visible" /> -->
+            <img id="video_load" src="php/cam.php" style="visibility:visible" />
+        </div>
+
+        <div class="div2">
+            <input type="button" style="height:40px;" value="Tilt-Up" onClick="send_user_input('104.0');"><br>
+            <input type="button" style="height:40px;" value="Pan-Left" onClick="send_user_input('102.1');">&emsp;&emsp;&emsp;&emsp;&emsp;
+            <input type="button" style="height:40px;" value="Pan-Right" onClick="send_user_input('103.1')"><br><br>
+            <input type="button" style="height:40px;" value="Cam-start" onClick="send_user_input('101.0');">&emsp;
+            <input type="button" style="height:40px;" value="Reset" onClick="send_user_input('106.0');">&emsp;
+            <input type="button" style="height:40px;" value="Cam-Stop" onClick="send_user_input('100.0');"><br><br>
+            <!-- <input type="button" value="Pos-reset" onClick="send_user_input('0.0');"><br><br> -->
+            <!-- <input type="button" value="Pan-Left-90" onClick="send_user_input('102.0');">&emsp;&emsp;&emsp;&emsp;&emsp;
+            <input type="button" value="Pan-Right-90" onClick="send_user_input('103.0')"><br> -->
+            <input type="button" style="height:40px;" value="Tilt-Down" onClick="send_user_input('105.0');"><br>
+            <p style="color:white;">Camera Controls</p>
+        </div>
+
+        <div class="div3">
+            <input type="button" style="height:40px;" value="Forward" onClick="send_user_input('2.0');"><br>
+            <input type="button" style="height:40px;" value="Left-45" onClick="send_user_input('3.45');">&emsp;&emsp;&emsp;&emsp;&emsp;
+            <input type="button" style="height:40px;" value="Right-45" onClick="send_user_input('4.45')"><br>
+            <input type="button" style="height:40px;" value="Stop" onClick="send_user_input('0.0');"><br>
+            <input type="button" style="height:40px;" value="Left-90" onClick="send_user_input('3.90');">&emsp;&emsp;&emsp;&emsp;&emsp;
+            <input type="button" style="height:40px;" value="Right-90" onClick="send_user_input('4.90')"><br>
+            <input type="button" style="height:40px;" value="Backward" onClick="send_user_input('1.0');"><br>
+            <p style="color:white;">Motion Controls</p>
+        </div>
+        
+        <div class="div5">
+            <input class="range_in" type="range" min="20" max="100" value="25" onchange="change_speed(this.value)" id="speed_control">
+            <p style="color:white;">Speed: <span id="speed_val"></span>%</p>
+        </div>
+
+        <div class="div4">
+            <input class="range_in" type="range" min="25" max="100" value="60" onchange="change_speed(this.value)" id="cam_pan_speed_control" disabled=true>
+            <p style="color:white;">Cam Pan Speed: <span id="speed_val"></span>%</p>
+        </div>
+
+        <div class="div6">
+            <!-- <div class="text-box" contenteditable="true"></div> text box which will contain spoken text -->
+            <div class="right">
+                <button id="start_button" onclick="startSpeechToTxtButton(event)">
+                    <img id="start_img" src="images/mic.gif" alt="Start">
+                </button>
+            </div>
+            <div id="results">
+                <span id="final_span" class="final"></span>
+                <span id="interim_span" class="interim"></span>
+                <p>
+            </div>
+        </div>
+
+        <div class="div7">
+            <p style="color:white;" id="batt_data"></p>
+        </div>
+    </div>
+
+    <script src="js/jquery-3.4.1.min.js"></script>
+    <script src="js/script1.js"></script>
+    <!-- <script src="js/script2.js"></script> -->
+</body>
+</html>
