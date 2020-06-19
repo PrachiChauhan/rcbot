@@ -1,0 +1,276 @@
+making new sd card:
+--------------------
+sudo dd bs=4M if=~/Software/OS/2019-09-26-raspbian-buster-lite.img of=/dev/sda conv=fsync
+or get latest from raspberry pi website
+
+setup wifi:
+--------------------
+file /etc/wpa_supplicant/wpa_supplicant.conf
+
+enable ssh:
+--------------------
+cd into boot
+and touch ssh
+
+config
+--------------------
+sudo raspi-config
+change timezone if needed
+enable camera
+enable i2c
+
+installs
+--------------------
+sudo apt update
+sudo apt dist-upgrade
+install git
+
+setup openvpn
+--------------------
+follow steps from help doc
+
+apache php setup
+--------------------
+sudo apt install apache2 -y
+test: http://192.168.1.43 should see apache webpage
+webpage location: /var/www/html/index.html
+php: sudo apt install php libapache2-mod-php -y
+
+php help
+config file: php.ini
+how to find its location: php5-cgi -i | grep php.ini
+change error_log
+display_errors should be off (don't wanna send errors on web page)
+
+html/css/js :
+https://www.digitalocean.com/community/tutorials/how-to-add-javascript-to-html
+
+so after putting rcbot html files, if you now just go to that ip like http://192.168.1.43
+it will show you all the files, which is not good right. so disable it
+in 
+/etc/apache2/apache2.conf
+change:
+<Directory /var/www/>
+        Options Indexes FollowSymLinks
+        AllowOverride None
+        Require all granted
+</Directory>
+to
+<Directory /var/www/>
+        Options FollowSymLinks
+        AllowOverride None
+        Require all granted
+</Directory>
+
+to make rcbot.html as default page instead of index.html, there are many ways:
+1. change in /etc/apache2/sites-enabled/000-default.conf
+2. create new /etc/apache2/sites-enabled/rcbot.conf
+3. some .htaccess file creation thing
+
+3 didn't work for me, didn't try hard
+2 didn't try
+What worked for me and so, I chose 1, so basically add the following line to 000-default.conf
+DirectoryIndex rcbot.html
+then
+sudo a2ensite 000-default.conf
+sudo systemctl restart apache2 (I think can also do sudo service apache2 restart/reload)
+refs:
+https://stackoverflow.com/questions/19467837/change-default-page-apache2-ubuntu
+https://askubuntu.com/questions/857609/apache2-now-pointing-to-new-default-page
+
+
+mjpg_streamer setup
+--------------------
+sudo apt-get install build-essential imagemagick libv4l-dev libjpeg-dev cmake -y
+git clone https://github.com/jacksonliam/mjpg-streamer.git
+cd mjpg-streamer/mjpg-streamer-experimental
+make
+sudo make install
+Test:
+/usr/local/bin/mjpg_streamer -i "/usr/local/lib/mjpg-streamer/input_raspicam.so -fps 8 -quality 95 -timestamp" -o "/usr/local/lib/mjpg-streamer/output_http.so -w /var/www/html -p 8080" & >/tmp/rclocal.log 2>&1
+and in browser:
+http://HOSTNAME:8080/?action=stream
+
+to run mjpg_Streamer on startup:
+add this to /etc/rc.local (sudo -u pi: runs the application as pi user (we need it later to kill the application from rcbot-cam))
+# RCBOT related initializations
+# video stream init
+sudo -u pi /usr/local/bin/mjpg_streamer -i "/usr/local/lib/mjpg-streamer/input_raspicam.so -fps 8 -quality 95 -timestamp" -o "/usr/local/lib/mjpg-streamer/output_http.so -w /var/www/html -p 8080" & >/tmp/rclocal.log 2>&1
+
+
+to debug if something goes wrong in rc.local:
+add this on top of rc.local
+exec 1>/tmp/rc.local.log 2>&1
+set -x
+
+
+mosquitto setup
+--------------------
+sudo apt install mosquitto mosquitto-clients
+https://appcodelabs.com/introduction-to-iot-build-an-mqtt-server-using-raspberry-pi
+It is important that libmosquitto.so(.so.1) is the latest. 
+
+mosquitto testing:
+mosquitto_pub -h 192.168.1.43 -m 'Testing' -t bot/speech_synthesizer
+
+modify audio settings
+--------------------
+follow document settingup-alsa-linux-raspberrypi.docx
+
+adafruit i2s microphone setup
+-------------------------------
+currently using microphone fro old google aiy (now unavailable), but adafruit has the same chip breakout
+most of the instructions are on adafruits website, but things to remember:
+1. pin connection:
+google aiy -- rpi
+DIN -- bcm20
+bclk -- bcm18
+lrcl -- bcm19
+google aiy pin layout
+-------------------------------------
+|  gnd    din   bclk   lrcl    3.3  |
+-------------------------------------
+
+2. no need to build linux kernel as suggested in that adafruit article or elsewhere, only need correct header files
+corresponding to the correct linux kernel to build this kernel module. Can get latest kernel headers from raspberry pi website, google it.
+
+
+
+speech to text: pocket sphynx setup
+--------------------
+ABOVE STEP (modify audio settings) SHOULD BE COMPLETED BEFORE THIS
+sudo apt install autoconf libtool automake bison python dev swig libasound2-dev
+#clone both libraries
+git clone https://github.com/cmusphinx/sphinxbase.git
+git clone https://github.com/cmusphinx/pocketsphinx.git
+
+#build both libraries
+cd sphinxbase
+./autogen.sh
+make
+sudo make install
+
+cd ../pocketsphinx
+./autogen.sh
+make
+sudo make install
+
+#add library path
+#either add these to .profile or .bashrc or will have to call it each time
+export LD_LIBRARY_PATH=/usr/local/lib
+export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+
+#Test out pocketsphinx (plughw is important, if we give something else, its not recognized)
+pocketsphinx_continuous -adcdev plughw:1 -inmic yes.
+
+#You should see something like the following, which indicates the system is ready for you to start speaking:
+
+#Listening...
+#Input overrun, read calls are too rare (non-fatal)
+
+#now create your own dictionary, following these steps:
+1. create a .txt file with all the commands you want to be recognized
+2. use sphinx lm online tool to convert .txt to bunch of other files (.dic, .lm)
+
+Good to go now !!
+
+Text to speech: pico2wave setup
+--------------------------------
+Normally you should be able to do this:
+sudo apt-get install libttspico-utils
+but this is a non free package due to which it looks like 
+raspberry pi foundation doesnot include it in raspbian. Some versions of
+raspbian have it but some don't.
+if it's not there then we can manually download and install
+wget http://archive.raspberrypi.org/debian/pool/main/s/svox/libttspico-utils_1.0+git20130326-3+rpi1_armhf.deb
+wget http://archive.raspberrypi.org/debian/pool/main/s/svox/libttspico0_1.0+git20130326-3+rpi1_armhf.deb
+sudo apt-get install -f ./libttspico0_1.0+git20130326-3+rpi1_armhf.deb ./libttspico-utils_1.0+git20130326-3+rpi1_armhf.deb
+for future I have downloaded them and kept in the same folder as this file
+
+setup pico2wave to output on stdout
+ln -s /dev/stdout /tmp/pico2wave.wav,
+
+then to run (plughw:1,0 is important)
+pico2wave -w /tmp/pico2wave.wav "Hi ruchir this is your rasberry pi!" && aplay /tmp/pico2wave.wav -D plughw:1,0
+
+
+TODO make file changes
+--------------------------
+should write an install section| what to include in it ?
+1. wiring pi related shared objects be copied to /usr/local/lib/ so that gcc can find them
+and can do more fancy stuff like copying bins to proper folder. consult some online guide when you write make install
+
+rsync commands
+--------------------------------
+# robot folder (CURRENTLY USED)
+rsync -ravhze ssh --delete /home/ruchir/Projects/robot/2019/ pi@192.168.1.43:/home/pi/Robot/2019/
+
+# /usr and /lib
+rsync -rl --delete-after --safe-links pi@192.168.1.43:/{lib,usr} $HOME/raspberrypi/rootfs
+
+rsync -ravhze ssh --delete pi@192.168.1.43:/usr/ /home/rc/git/raspberrypi/rootfs/usr/
+rsync -ravhze ssh --delete pi@192.168.1.43:/lib/ /home/rc/git/raspberrypi/rootfs/lib/
+
+Delete files on destination that are not preset in source:
+rsync -ravhze ssh --progress --delete /home/rc/Projects/robot/2019/ pi@192.168.1.43:/home/pi/Robot/2019/
+
+Without delete:
+rsync -ravhze ssh --progress /home/rc/Projects/robot/2019/ pi@192.168.1.43:/home/pi/Robot/2019/
+
+
+
+
+pi zero gpio info
+------------------------------
+ +-----+-----+---------+------+---+-Pi ZeroW-+---+------+---------+-----+-----+
+ | BCM | wPi |   Name  | Mode | V | Physical | V | Mode | Name    | wPi | BCM |
+ +-----+-----+---------+------+---+----++----+---+------+---------+-----+-----+
+ |     |     |    3.3v |      |   |  1 || 2  |   |      | 5v      |     |     |
+ |   2 |   8 |   SDA.1 |   IN | 1 |  3 || 4  |   |      | 5v      |     |     |
+ |   3 |   9 |   SCL.1 |   IN | 1 |  5 || 6  |   |      | 0v      |     |     |
+ |   4 |   7 | GPIO. 7 |   IN | 1 |  7 || 8  | 0 | IN   | TxD     | 15  | 14  |
+ |     |     |      0v |      |   |  9 || 10 | 1 | IN   | RxD     | 16  | 15  |
+ |  17 |   0 | GPIO. 0 |  OUT | 0 | 11 || 12 | 0 | IN   | GPIO. 1 | 1   | 18  |
+ |  27 |   2 | GPIO. 2 |  OUT | 0 | 13 || 14 |   |      | 0v      |     |     |
+ |  22 |   3 | GPIO. 3 |  OUT | 0 | 15 || 16 | 0 | OUT  | GPIO. 4 | 4   | 23  |
+ |     |     |    3.3v |      |   | 17 || 18 | 0 | OUT  | GPIO. 5 | 5   | 24  |
+ |  10 |  12 |    MOSI |   IN | 0 | 19 || 20 |   |      | 0v      |     |     |
+ |   9 |  13 |    MISO |   IN | 0 | 21 || 22 | 0 | OUT  | GPIO. 6 | 6   | 25  |
+ |  11 |  14 |    SCLK |   IN | 0 | 23 || 24 | 1 | IN   | CE0     | 10  | 8   |
+ |     |     |      0v |      |   | 25 || 26 | 1 | IN   | CE1     | 11  | 7   |
+ |   0 |  30 |   SDA.0 |   IN | 1 | 27 || 28 | 1 | IN   | SCL.0   | 31  | 1   |
+ |   5 |  21 | GPIO.21 |   IN | 1 | 29 || 30 |   |      | 0v      |     |     |
+ |   6 |  22 | GPIO.22 |   IN | 1 | 31 || 32 | 0 | IN   | GPIO.26 | 26  | 12  |
+ |  13 |  23 | GPIO.23 |   IN | 0 | 33 || 34 |   |      | 0v      |     |     |
+ |  19 |  24 | GPIO.24 |   IN | 0 | 35 || 36 | 0 | IN   | GPIO.27 | 27  | 16  |
+ |  26 |  25 | GPIO.25 |   IN | 0 | 37 || 38 | 0 | IN   | GPIO.28 | 28  | 20  |
+ |     |     |      0v |      |   | 39 || 40 | 0 | IN   | GPIO.29 | 29  | 21  |
+ +-----+-----+---------+------+---+----++----+---+------+---------+-----+-----+
+ | BCM | wPi |   Name  | Mode | V | Physical | V | Mode | Name    | wPi | BCM |
+ +-----+-----+---------+------+---+-Pi ZeroW-+---+------+---------+-----+-----+
+
+
+servo linear equation
+-----------------------------
+how to find equation
+1. collect some data
+degrees|pwm
+   0   |4
+   45  |8
+   90  |12
+   125 |16
+   180 |21
+
+looks like linear relationship
+we have two points (0,4) and (180,21)
+so calculate slope of line m = (y2-y1)/(x2-x1) => m = (21-4)/(180-0) => m = 17/180
+now we know the point form of line y-y1 = m(x-x1)
+so y-4 = (17/180)*(x-0)
+this gives us y = (17/180)*x + 4
+where y = dutycycle and x = angle
+
+misc
+-----------------------------
+/usr/local/ is the folder that gcc looks in when trying to find libraries(-lwiringPi) and headers
+there are folders: /usr/local/lib /usr/local/include and check if this folder is referred to in libc default config file /etc/ld.so.conf.d/libc.conf
+https://stackoverflow.com/questions/19162072/how-to-install-the-raspberry-pi-cross-compiler-on-my-linux-host-machine
